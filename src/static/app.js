@@ -25,7 +25,50 @@ document.addEventListener("DOMContentLoaded", () => {
           <p>${details.description}</p>
           <p><strong>Schedule:</strong> ${details.schedule}</p>
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
+          <p><strong>Participants:</strong></p>
+          <ul class="participants-list">
+            ${details.participants.map(email => `<li><span>${email}</span><button class="delete-btn" data-email="${email}" data-activity="${name}" aria-label="Remove ${email}">✕</button></li>`).join('')}
+          </ul>
         `;
+        
+        // Add event listeners for delete buttons
+        activityCard.querySelectorAll('.delete-btn').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const email = btn.dataset.email;
+            const activity = btn.dataset.activity;
+            
+            try {
+              const response = await fetch(
+                `/activities/${encodeURIComponent(activity)}/unregister?email=${encodeURIComponent(email)}`,
+                {
+                  method: 'DELETE',
+                }
+              );
+              
+              const result = await response.json();
+              
+              if (response.ok) {
+                messageDiv.textContent = result.message || `${email} has been unregistered.`;
+                messageDiv.className = 'success';
+                messageDiv.classList.remove('hidden');
+                setTimeout(() => {
+                  messageDiv.classList.add('hidden');
+                }, 5000);
+                fetchActivities();
+              } else {
+                messageDiv.textContent = result.detail || 'Failed to unregister participant.';
+                messageDiv.className = 'error';
+                messageDiv.classList.remove('hidden');
+              }
+            } catch (error) {
+              messageDiv.textContent = 'Failed to unregister participant. Please try again.';
+              messageDiv.className = 'error';
+              messageDiv.classList.remove('hidden');
+              console.error('Error unregistering participant:', error);
+            }
+          });
+        });
 
         activitiesList.appendChild(activityCard);
 
